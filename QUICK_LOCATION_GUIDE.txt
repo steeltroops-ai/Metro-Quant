@@ -1,0 +1,52 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                  🌍 QUICK LOCATION CHANGE GUIDE                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ CHANGE LOCATION IN 3 STEPS:                                         │
+└──────────────────────────────────────────────────────────────────────┘
+
+  1. Open file:    src/utils/constants.py
+  
+  2. Find line 13: ACTIVE_LOCATION = "MUNICH"
+  
+  3. Change to:    ACTIVE_LOCATION = "LONDON"
+                   (or any city below)
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ AVAILABLE CITIES:                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+  ✓ MUNICH      - Munich, Germany (default)
+  ✓ LONDON      - London, United Kingdom
+  ✓ NEW_YORK    - New York, United States
+  ✓ TOKYO       - Tokyo, Japan
+  ✓ SINGAPORE   - Singapore
+  ✓ PARIS       - Paris, France
+  ✓ HONG_KONG   - Hong Kong
+  ✓ SYDNEY      - Sydney, Australia
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ VERIFY YOUR CHANGE:                                                 │
+└──────────────────────────────────────────────────────────────────────┘
+
+  Run: python demo_location_change.py
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ ADD YOUR OWN CITY:                                                   │
+└──────────────────────────────────────────────────────────────────────┘
+
+  See: LOCATION_CONFIG.md for detailed instructions
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ WHAT CHANGES AUTOMATICALLY:                                          │
+└──────────────────────────────────────────────────────────────────────┘
+
+  ✓ Weather data fetched from your city
+  ✓ Air quality data from your coordinates
+  ✓ Flight data from your city's airport
+  ✓ All trading signals based on your city's data
+
+╔══════════════════════════════════════════════════════════════════════╗
+║  That's it! The bot now trades using data from your chosen city.    ║
+╚══════════════════════════════════════════════════════════════════════╝

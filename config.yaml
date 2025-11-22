@@ -1,0 +1,133 @@
+# IMC Trading Bot Configuration
+
+# API Keys (use environment variables for security)
+api_keys:
+  openweather: ${OPENWEATHER_API_KEY}  # OpenWeatherMap API key
+  opensky: ${OPENSKY_API_KEY}  # OpenSky Network API key (optional)
+
+# Exchange Configuration
+exchange:
+  url: wss://imc-exchange.com  # WebSocket URL for simulated exchange
+  timeout: 5000  # Connection timeout in milliseconds
+  reconnect_attempts: 5
+  reconnect_delay: 2  # seconds
+
+# Location Configuration (easily changeable for any city)
+location:
+  city: Munich
+  country: DE
+  coordinates:
+    lat: 48.1351
+    lon: 11.5820
+  airport_code: MUC  # For flight data
+  timezone: Europe/Berlin
+
+# Data Sources (automatically use location from above)
+data_sources:
+  weather:
+    url: https://api.openweathermap.org/data/2.5/weather
+    update_interval: 60  # seconds
+  
+  air_quality:
+    url: https://api.openweathermap.org/data/2.5/air_pollution
+    update_interval: 60  # seconds
+  
+  flights:
+    url: https://opensky-network.org/api/states/all
+    # Bounding box calculated from coordinates (±0.5 degrees)
+    bbox_offset: 0.5  # degrees around center coordinates
+    update_interval: 30  # seconds
+
+# Cache Configuration
+cache:
+  ttl: 300  # Time-to-live in seconds
+  max_size: 1000  # Maximum number of cached items
+
+# Strategy Parameters
+strategy:
+  signal_threshold: 0.3  # Minimum signal strength to trade
+  confidence_threshold: 0.5  # Minimum confidence to trade
+  
+  # Regime-specific signal weights
+  regime_weights:
+    trending:
+      momentum: 0.6
+      weather: 0.2
+      flights: 0.1
+      air_quality: 0.1
+    
+    mean_reverting:
+      momentum: 0.2
+      weather: 0.3
+      flights: 0.3
+      air_quality: 0.2
+    
+    high_volatility:
+      momentum: 0.3
+      weather: 0.3
+      flights: 0.2
+      air_quality: 0.2
+    
+    low_volatility:
+      momentum: 0.4
+      weather: 0.3
+      flights: 0.2
+      air_quality: 0.1
+
+# Risk Management
+risk:
+  max_position_size: 0.20  # 20% of capital per position
+  max_total_exposure: 0.80  # 80% of capital total
+  drawdown_reduction_threshold: 0.15  # 15% drawdown triggers 50% reduction
+  drawdown_safe_mode_threshold: 0.25  # 25% drawdown triggers safe mode
+  high_volatility_reduction: 0.50  # 50% position reduction in high volatility
+
+# Position Sizing
+position_sizing:
+  base_size: 0.10  # Base position size (10% of capital)
+  confidence_scaling: true  # Scale position by signal confidence
+  regime_scaling: true  # Scale position by regime
+
+# Regime Detection
+regime_detection:
+  lookback_period: 100  # Number of bars for regime analysis
+  volatility_threshold: 0.02  # Threshold for high/low volatility classification
+  trend_ma_fast: 10  # Fast moving average period
+  trend_ma_slow: 30  # Slow moving average period
+  regime_confidence_threshold: 0.70  # Minimum confidence for regime classification
+
+# Feature Engineering
+features:
+  weather_momentum_period: 5  # Periods for weather momentum calculation
+  flight_volume_ma_period: 10  # Moving average period for flight volume
+  air_quality_delta_period: 3  # Periods for air quality delta calculation
+
+# Kalman Filter
+kalman:
+  process_variance: 0.01  # Process noise variance
+  measurement_variance: 0.1  # Measurement noise variance
+
+# Order Execution
+execution:
+  order_timeout: 10  # seconds
+  max_slippage: 0.001  # Maximum acceptable slippage (0.1%)
+  limit_price_offset: 0.0005  # Offset for limit prices (0.05%)
+
+# Monitoring
+monitoring:
+  metrics_port: 8080  # HTTP port for metrics endpoint
+  log_level: INFO  # DEBUG, INFO, WARNING, ERROR
+  log_format: json  # json or text
+  report_interval: 60  # seconds
+
+# Backtesting
+backtest:
+  slippage: 0.0005  # Simulated slippage (0.05%)
+  commission: 0.0001  # Commission per trade (0.01%)
+  initial_capital: 100000  # Starting capital
+
+# Performance Targets
+targets:
+  sharpe_ratio: 1.5
+  max_drawdown: 0.20  # 20%
+  win_rate: 0.55  # 55%
