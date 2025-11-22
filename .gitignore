@@ -69,3 +69,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+.kiro/
+docs/
