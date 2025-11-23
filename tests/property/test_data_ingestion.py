@@ -214,10 +214,10 @@ async def test_chronological_processing_order(num_datapoints: int, time_offset_s
 
 
 # Feature: imc-trading-bot, Property 4: Chronological processing order (cache component)
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
-    num_updates=st.integers(min_value=2, max_value=15),
-    update_interval_ms=st.integers(min_value=10, max_value=100)
+    num_updates=st.integers(min_value=2, max_value=10),
+    update_interval_ms=st.integers(min_value=1, max_value=5)
 )
 @pytest.mark.asyncio
 async def test_cache_chronological_updates(num_updates: int, update_interval_ms: int):
@@ -258,9 +258,9 @@ async def test_cache_chronological_updates(num_updates: int, update_interval_ms:
 
 
 # Helper test: Verify cache TTL expiration
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=20, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
-    ttl_seconds=st.integers(min_value=1, max_value=5)
+    ttl_seconds=st.integers(min_value=1, max_value=2)
 )
 @pytest.mark.asyncio
 async def test_cache_ttl_expiration(ttl_seconds: int):

@@ -2,81 +2,28 @@
 inclusion: always
 ---
 
-# Project Structure & Architecture Patterns
+# Project Structure & Architecture
 
-## Directory Structure
+## Module Organization
 
-When creating new files or organizing code, follow this modular structure:
+Place files in the appropriate module based on responsibility:
 
-```
-src/
-├── main.py                    # Entry point with async main loop
-├── dashboard.py               # Streamlit dashboard
-├── data/                      # Data ingestion (async clients)
-│   ├── base.py               # Abstract DataClient interface
-│   ├── weather.py            # Weather API client
-│   ├── air_quality.py        # Air quality client
-│   ├── flights.py            # Flight data client
-│   └── cache.py              # Caching layer
-├── signals/                   # Signal processing
-│   ├── features.py           # Feature engineering (Numba-optimized)
-│   ├── kalman.py             # Kalman Filter implementation
-│   ├── generator.py          # Signal generation logic
-│   └── combiner.py           # Signal aggregation
-├── strategy/                  # Trading strategy
-│   ├── regime.py             # Regime detection (HMM)
-│   ├── adaptive.py           # Adaptive strategy logic
-│   ├── position_sizer.py     # Position sizing
-│   └── microstructure.py     # Order book imbalance
-├── risk/                      # Risk management
-│   ├── limiter.py            # Position limits
-│   ├── drawdown.py           # Drawdown monitoring
-│   └── safe_mode.py          # Emergency shutdown
-├── exchange/                  # Exchange interaction
-│   ├── client.py             # WebSocket client
-│   ├── orders.py             # Order management
-│   └── positions.py          # Position tracking
-├── monitoring/                # Observability
-│   ├── logger.py             # Structured logging
-│   ├── metrics.py            # Performance metrics
-│   └── reporter.py           # Reporting
-├── backtest/                  # Backtesting
-│   ├── engine.py             # Backtest engine (Polars)
-│   ├── simulator.py          # Order simulation
-│   └── analyzer.py           # Performance analysis
-├── visualization/             # Charts & dashboards
-│   ├── streamlit_app.py      # Dashboard components
-│   ├── charts.py             # Chart generation
-│   └── presentation.py       # Presentation materials
-└── utils/                     # Shared utilities
-    ├── config.py             # Configuration loader
-    ├── types.py              # Type definitions (Pydantic)
-    └── helpers.py            # Helper functions
+- `src/data/` - Async data clients (inherit from `DataClient` base class)
+- `src/signals/` - Feature engineering (Numba-optimized) and signal generation
+- `src/strategy/` - Trading logic, regime detection, position sizing
+- `src/risk/` - Risk limits, drawdown monitoring, emergency shutdown
+- `src/exchange/` - WebSocket client, order/position management
+- `src/monitoring/` - Logging, metrics, reporting
+- `src/backtest/` - Backtesting engine (Polars-based)
+- `src/visualization/` - Streamlit dashboard and charts
+- `src/utils/` - Config loader, type definitions (Pydantic), helpers
 
-data/                          # Data storage
-├── raw/                      # Raw API responses
-├── processed/                # Processed features (Parquet)
-├── historical/               # Historical market data
-└── cache/                    # Cached data
+## Async-First Architecture
 
-tests/                         # Tests
-├── unit/                     # Unit tests
-├── property/                 # Property-based tests (Hypothesis)
-└── integration/              # Integration tests
+**All I/O operations MUST be async** (API calls, WebSocket, file operations):
 
-docs/                          # Documentation
-├── presentation/             # Presentation materials
-└── diagrams/                 # Architecture diagrams
-```
-
-## Architecture Principles
-
-### Async-First Design
-- Use `asyncio` for all I/O operations (API calls, WebSocket, file I/O)
-- Implement concurrent data fetching from multiple sources
-- Non-blocking order submission and execution
-- Example pattern:
 ```python
+# Concurrent data fetching pattern
 async def fetch_all_data():
     async with aiohttp.ClientSession() as session:
         tasks = [
@@ -87,36 +34,52 @@ async def fetch_all_data():
         return await asyncio.gather(*tasks)
 ```
 
-### Performance Optimization
-- Use Polars for data processing (prefer over Pandas)
-- Apply Numba `@jit` decorator to hot loops and feature calculations
-- Vectorize operations with NumPy where possible
+**Critical**: Never use blocking I/O in async functions. Use `aiohttp` for HTTP, `aiofiles` for file I/O.
+
+## Data Flow Pipeline
+
+Follow this strict pipeline order:
+
+```
+External APIs → Data Clients (async) → Cache → Feature Engineer (Numba)
+    ↓
+Kalman Filter → Signal Generator → Regime Detector
+    ↓
+Adaptive Strategy + OBI → Position Sizer → Risk Manager
+    ↓
+Order Manager (async) → Exchange (WebSocket)
+```
+
+Each stage must:
+- Have clear input/output contracts (Pydantic models)
+- Be independently testable
+- Handle errors gracefully with fallback behavior
+
+## Performance Requirements
+
+**Target latency: < 100ms** (data → signal → order)
+
+- Data ingestion: < 50ms (async concurrent)
+- Feature engineering: < 20ms (use `@jit` from Numba)
+- Signal generation: < 10ms (vectorized NumPy)
+- Order submission: < 20ms (async WebSocket)
+
+**Optimization rules**:
+- Use Polars over Pandas for data processing
+- Apply `@jit(nopython=True)` to hot loops and feature calculations
+- Vectorize with NumPy where possible
 - Store processed data in Parquet format
-- Target: < 100ms total latency (data → signal → order)
 
-### Separation of Concerns
-- Each module has single responsibility
-- Clear interfaces between layers (data → signals → strategy → risk → exchange)
-- Abstract base classes for extensibility (e.g., `DataClient`, `SignalGenerator`)
-- Dependency injection for testability
+## Code Style
 
-### Type Safety
-- Use Pydantic models for data validation and serialization
-- Full type hints on all functions and methods
-- Run mypy for type checking
-
-## Naming Conventions
-
+**Naming conventions**:
 - Files: `snake_case.py`
 - Classes: `PascalCase`
 - Functions/methods: `snake_case()`
 - Constants: `UPPER_SNAKE_CASE`
 - Private members: `_leading_underscore`
 
-## Import Organization
-
-Always organize imports in this order with blank lines between groups:
-
+**Import order** (with blank lines between groups):
 ```python
 # 1. Standard library
 import asyncio
@@ -132,97 +95,127 @@ from src.signals.features import FeatureEngineer
 from src.utils.types import Signal, MarketData
 ```
 
-## Configuration Pattern
+## Type Safety
 
-Use YAML for configuration with environment variable substitution:
+**Required**:
+- Full type hints on all functions and methods
+- Pydantic models for data validation and serialization
+- Use `Optional[T]` for nullable values, not `T | None`
+
+```python
+from pydantic import BaseModel
+from typing import Optional
+
+class Signal(BaseModel):
+    direction: int  # -1, 0, 1
+    confidence: float  # 0.0 to 1.0
+    metadata: Optional[dict] = None
+```
+
+## Configuration
+
+Use `config.yaml` with environment variable substitution:
 
 ```yaml
 api_keys:
   openweather: ${OPENWEATHER_API_KEY}
   
 exchange:
-  url: wss://imc-exchange.com
+  url: ${EXCHANGE_URL:wss://imc-exchange.com}  # Default value after colon
   timeout: 5000
-  
-strategy:
-  signal_threshold: 0.3
-  position_limit: 0.2
 ```
 
-Load with `src/utils/config.py` that handles env var expansion.
+Load via `src/utils/config.py` which handles `${VAR}` expansion.
 
-## Data Flow Architecture
+**Never hardcode** strategy parameters, API keys, or URLs.
 
-Follow this pipeline pattern:
+## Error Handling
 
-```
-External APIs → Data Clients (async) → Cache → Feature Engineer (Numba)
-                                                        ↓
-                                                 Kalman Filter
-                                                        ↓
-                                                Signal Generator
-                                                        ↓
-                                          Regime Detector (HMM)
-                                                        ↓
-                                            Adaptive Strategy + OBI
-                                                        ↓
-                                              Position Sizer
-                                                        ↓
-                                              Risk Manager
-                                                        ↓
-                                            Order Manager (async)
-                                                        ↓
-                                              Exchange (WebSocket)
+**Required patterns**:
+- Use specific exceptions, never bare `except:`
+- Log errors with context using loguru: `logger.error(f"Failed to fetch {source}", exc_info=True)`
+- Implement graceful degradation (fallback to cached data)
+- Risk manager triggers safe mode on critical errors
+
+```python
+try:
+    data = await fetch_data()
+except aiohttp.ClientError as e:
+    logger.warning(f"API failed, using cache: {e}")
+    data = load_from_cache()
 ```
 
-Each stage should be independently testable and have clear input/output contracts.
+## Documentation
 
-## Code Documentation
-
-Every module should include:
+**Every module must include**:
 - Module-level docstring explaining purpose
-- Function/method docstrings with type hints
-- Performance characteristics for critical paths
-- Usage examples for complex APIs
+- Function docstrings with Args/Returns/Performance notes
+- Type hints (not just in docstrings)
 
-Example:
 ```python
 async def compute_signal(data: MarketData) -> Signal:
     """
-    Compute trading signal from market data using Kalman filtering.
+    Compute trading signal using Kalman filtering.
     
     Args:
         data: Market data with OHLCV and order book
         
     Returns:
-        Signal with direction, confidence, and metadata
+        Signal with direction (-1/0/1), confidence (0-1), metadata
         
     Performance: ~10ms for typical input
     """
-    pass
 ```
 
-## Error Handling
+## Testing
 
-- Use specific exceptions, not bare `except:`
-- Log errors with context using loguru
-- Implement graceful degradation (e.g., fallback to cached data)
-- Risk management should trigger safe mode on critical errors
+**Test organization**:
+- `tests/unit/` - Pure functions (signals, features, risk)
+- `tests/property/` - Hypothesis property-based tests for invariants
+- `tests/integration/` - Full pipeline tests
 
-## Testing Strategy
+**Rules**:
+- Mock external APIs in tests (use `aioresponses` for aiohttp)
+- Test file structure mirrors `src/` structure
+- Target > 80% coverage on critical paths (risk, signals, strategy)
 
-- Unit tests for pure functions (signals, features, risk calculations)
-- Property-based tests with Hypothesis for invariants
-- Integration tests for full pipeline
-- Mock external APIs in tests
-- Target: > 80% coverage on critical paths
-
-## File Creation Guidelines
+## File Creation Checklist
 
 When creating new files:
-1. Place in appropriate module directory based on responsibility
-2. Include `__init__.py` in new packages
-3. Add module docstring at top
-4. Follow import organization pattern
-5. Use type hints throughout
-6. Add corresponding test file in `tests/` with same structure
+1. ✓ Place in correct module directory
+2. ✓ Add `__init__.py` if creating new package
+3. ✓ Module docstring at top
+4. ✓ Follow import organization (stdlib → third-party → local)
+5. ✓ Full type hints on all functions
+6. ✓ Create corresponding test file in `tests/`
+
+## Common Patterns
+
+**Abstract base class for extensibility**:
+```python
+from abc import ABC, abstractmethod
+
+class DataClient(ABC):
+    @abstractmethod
+    async def fetch(self) -> dict:
+        """Fetch data from source."""
+        pass
+```
+
+**Dependency injection for testability**:
+```python
+class Strategy:
+    def __init__(self, signal_generator: SignalGenerator, risk_manager: RiskManager):
+        self.signal_gen = signal_generator
+        self.risk_mgr = risk_manager
+```
+
+**Numba optimization for hot paths**:
+```python
+from numba import jit
+
+@jit(nopython=True)
+def compute_features(prices: np.ndarray) -> np.ndarray:
+    """Compute features at C speed."""
+    return np.diff(prices) / prices[:-1]
+```

@@ -54,9 +54,21 @@ This document specifies the requirements for a winning trading bot for the IMC M
 4. WHEN in trending regime THEN the Trading Bot SHALL increase momentum signal weights
 5. WHEN regime is uncertain THEN the Trading Bot SHALL use conservative default parameters
 
-### Requirement 4: Order Execution and Market Interaction
+### Requirement 4: IMC Exchange Integration
 
-**User Story:** As a trading bot, I want to execute trades on the simulated exchange efficiently, so that I can capture profitable opportunities.
+**User Story:** As a trading bot, I want to connect to the IMC test/production exchange, so that I can trade real instruments and compete on the leaderboard.
+
+#### Acceptance Criteria
+
+1. WHEN the Trading Bot starts THEN the system SHALL authenticate with the IMC exchange using team credentials
+2. WHEN authenticated THEN the Trading Bot SHALL fetch available products (Eisbach, Weather, Flights, Airport, ETF instruments)
+3. WHEN connected THEN the Trading Bot SHALL subscribe to real-time market data for all tradeable products
+4. WHEN market data updates THEN the Trading Bot SHALL process order book changes within 50 milliseconds
+5. WHEN the exchange connection drops THEN the Trading Bot SHALL attempt reconnection with exponential backoff
+
+### Requirement 5: Order Execution and Market Interaction
+
+**User Story:** As a trading bot, I want to execute trades on the IMC exchange efficiently, so that I can capture profitable opportunities and maximize PnL.
 
 #### Acceptance Criteria
 
@@ -65,8 +77,9 @@ This document specifies the requirements for a winning trading bot for the IMC M
 3. WHEN an order is filled THEN the Trading Bot SHALL update internal position tracking immediately
 4. WHEN an order is rejected THEN the Trading Bot SHALL log the reason and adjust future orders accordingly
 5. WHEN market conditions change rapidly THEN the Trading Bot SHALL cancel unfilled orders and reassess
+6. WHEN trading THEN the Trading Bot SHALL respect exchange position limits (-200 to +200 per instrument)
 
-### Requirement 5: Risk Management
+### Requirement 6: Risk Management
 
 **User Story:** As a trading bot, I want to manage risk through position limits and drawdown controls, so that I avoid catastrophic losses.
 
@@ -78,7 +91,7 @@ This document specifies the requirements for a winning trading bot for the IMC M
 4. WHEN signal confidence is low THEN the Trading Bot SHALL scale position size proportionally to confidence
 5. WHEN multiple positions are held THEN the Trading Bot SHALL ensure total exposure does not exceed 80% of capital
 
-### Requirement 6: Performance Monitoring and Logging
+### Requirement 7: Performance Monitoring and Logging
 
 **User Story:** As a developer, I want comprehensive logging and monitoring, so that I can debug issues and demonstrate my thinking to judges.
 
@@ -90,7 +103,7 @@ This document specifies the requirements for a winning trading bot for the IMC M
 4. WHEN the session ends THEN the Trading Bot SHALL generate a summary report with PnL, Sharpe ratio, and trade statistics
 5. WHEN running THEN the Trading Bot SHALL expose real-time metrics via a monitoring interface
 
-### Requirement 7: Backtesting and Strategy Validation
+### Requirement 8: Backtesting and Strategy Validation
 
 **User Story:** As a developer, I want to backtest my strategy on historical data, so that I can validate performance before live trading.
 
@@ -102,7 +115,7 @@ This document specifies the requirements for a winning trading bot for the IMC M
 4. WHEN testing across market types THEN the Backtesting Engine SHALL show performance breakdown by regime
 5. WHEN comparing strategies THEN the Backtesting Engine SHALL support A/B testing with statistical significance
 
-### Requirement 8: Visualization and Presentation
+### Requirement 9: Visualization and Presentation
 
 **User Story:** As a hackathon participant, I want compelling visualizations of my strategy, so that I can effectively present to judges.
 
@@ -114,7 +127,7 @@ This document specifies the requirements for a winning trading bot for the IMC M
 4. WHEN showing architecture THEN the system SHALL generate clean system diagrams
 5. WHEN presenting results THEN the system SHALL highlight consistency metrics over peak PnL
 
-### Requirement 9: Code Quality and Architecture
+### Requirement 10: Code Quality and Architecture
 
 **User Story:** As a hackathon participant, I want clean, well-architected code, so that judges recognize my engineering discipline.
 

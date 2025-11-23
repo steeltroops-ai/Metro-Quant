@@ -5,12 +5,30 @@ api_keys:
   openweather: ${OPENWEATHER_API_KEY}  # OpenWeatherMap API key
   opensky: ${OPENSKY_API_KEY}  # OpenSky Network API key (optional)
 
-# Exchange Configuration
+# IMC Exchange Configuration (REAL EXCHANGE!)
 exchange:
-  url: wss://imc-exchange.com  # WebSocket URL for simulated exchange
+  url: ${IMC_EXCHANGE_URL}  # IMC exchange URL (test or production)
+  username: ${IMC_USERNAME}  # Team username
+  password: ${IMC_PASSWORD}  # Team password
   timeout: 5000  # Connection timeout in milliseconds
   reconnect_attempts: 5
   reconnect_delay: 2  # seconds
+  
+  # Position limits (enforced by exchange)
+  position_limits:
+    min: -200  # Maximum short position per instrument
+    max: 200   # Maximum long position per instrument
+  
+  # Target instruments (8 available on IMC exchange)
+  instruments:
+    - 1_Eisbach
+    - 2_Eisbach_Call
+    - 3_Weather
+    - 4_Weather
+    - 5_Flights
+    - 6_Airport
+    - 7_ETF  # Primary target - Munich ETF
+    - 8_ETF_Strangle
 
 # Location Configuration (easily changeable for any city)
 location:

@@ -1,189 +1,213 @@
-# Technology Stack
+---
+inclusion: always
+---
 
-## Primary Language
+# Technology Stack & Implementation Patterns
 
-**Python 3.10+** - Superior for hackathons due to data science ecosystem. While IMC uses C++ for nanosecond execution, Python's rapid development and Munich signal analysis libraries make it the winning choice.
+## Language & Core Requirements
 
-## Core Stack (Production-Grade)
+**Python 3.10+** with full type hints. All async I/O operations are mandatory for performance.
 
-### Concurrency & Async (NON-NEGOTIABLE)
-- **asyncio**: Core async runtime for responsive bot
-- **aiohttp**: Async HTTP client for API calls
-- **websockets**: Real-time exchange communication
+## Critical Libraries & Usage Patterns
 
-### Data Processing (Speed Matters)
-- **Polars**: 10x faster than Pandas for large datasets (primary choice)
-- **Pandas**: Fallback for compatibility with existing libraries
-- **NumPy**: Vectorized operations, SIMD optimizations
-- **Numba**: JIT compilation with @jit decorator - compiles Python to machine code
-
-### Math & Statistics
-- **NumPy**: Vector operations, linear algebra
-- **SciPy**: Statistical functions, optimization
-- **Statsmodels**: Time-series analysis, cointegration tests
-- **pykalman**: Kalman Filter implementation (the "ghost" algo)
-
-### Networking & APIs
-- **aiohttp**: Async HTTP requests (weather, air quality, flights)
-- **websockets**: Real-time market data streaming
-- **requests**: Synchronous fallback if needed
-
-### Visualization (The "Wow" Factor)
-- **Streamlit**: Live dashboard showing real-time PnL, signal correlations, regime changes
-- **Plotly**: Interactive charts for presentation
-- **matplotlib/seaborn**: Static charts for documentation
-
-### Testing
-- **Hypothesis**: Property-based testing
-- **pytest**: Unit testing framework
-- **pytest-asyncio**: Async test support
-
-## "Turbo" Stack Upgrades (Competitive Edge)
-
-### 1. Kalman Filter (State Estimation)
-**Why**: Unlike lagging rolling OLS, Kalman Filters estimate the "true" hidden state instantly
-**Use Case**: Real-time signal filtering, noise reduction, trend estimation
-**Library**: `pykalman` or `filterpy`
+### Async Operations (MANDATORY)
 ```python
-from pykalman import KalmanFilter
-# Estimates true price/signal from noisy observations
-kf = KalmanFilter(transition_matrices=[1], observation_matrices=[1])
-state_means, _ = kf.filter(noisy_observations)
+# Use asyncio for all I/O - never blocking calls
+import asyncio
+import aiohttp
+from websockets import connect
+
+# Pattern: Concurrent data fetching
+async def fetch_all_data():
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            fetch_weather(session),
+            fetch_air_quality(session),
+            fetch_flights(session)
+        ]
+        return await asyncio.gather(*tasks)
 ```
 
-### 2. Numba JIT Compilation
-**Why**: Compiles Python loops to machine code (100x+ speedup)
-**Use Case**: Feature engineering loops, signal calculations
+### Data Processing Stack
+- **Polars**: Primary choice for data processing (10x faster than Pandas)
+- **NumPy**: Vectorized operations, use for all array math
+- **Numba**: Apply `@jit(nopython=True)` to hot loops and feature calculations
+
 ```python
 from numba import jit
+import numpy as np
+
 @jit(nopython=True)
-def fast_feature_calc(prices):
-    # This runs at C speed
+def compute_returns(prices: np.ndarray) -> np.ndarray:
+    """JIT-compiled for C-level performance."""
     return np.diff(prices) / prices[:-1]
 ```
 
-### 3. Order Book Imbalance (OBI) - Microstructure Alpha
-**Why**: Predicts price movement 1 second before it happens
-**Use Case**: Front-run market moves using bid/ask depth
+### Signal Processing
+- **pykalman** or **filterpy**: Kalman Filter for real-time state estimation
+- **scipy**: Statistical functions, optimization
+- **statsmodels**: Time-series analysis, cointegration
+
 ```python
-def order_book_imbalance(bids, asks):
-    bid_volume = sum(b['size'] for b in bids[:5])
-    ask_volume = sum(a['size'] for a in asks[:5])
-    return (bid_volume - ask_volume) / (bid_volume + ask_volume)
+from pykalman import KalmanFilter
+
+# Pattern: Noise reduction in signals
+kf = KalmanFilter(transition_matrices=[1], observation_matrices=[1])
+filtered_signal, _ = kf.filter(noisy_observations)
 ```
 
-### 4. Advanced Regime Detection
-- **Hidden Markov Models (HMM)**: Probabilistic regime classification
-- **Change Point Detection**: Identify regime transitions instantly
-- **Hurst Exponent**: Measure mean-reversion vs trending
+### Data Validation & Types
+```python
+from pydantic import BaseModel, Field
+from typing import Optional
 
-## Architecture Principles
-
-- **Async-first**: All I/O operations use asyncio
-- **JIT-optimized**: Critical paths use Numba compilation
-- **Real-time**: Sub-100ms latency for data → signal → order
-- **Observable**: Live Streamlit dashboard for judges
-- **Modular**: Clean separation of concerns
-- **Type-safe**: Full type hints with mypy validation
-
-## Performance Targets
-
-- Data ingestion: < 50ms (async concurrent fetching)
-- Feature engineering: < 20ms (Numba JIT)
-- Signal generation: < 10ms (vectorized NumPy)
-- Order submission: < 20ms (async websocket)
-- **Total latency: < 100ms** (data → order)
-
-## Development Workflow
-
-### Hours 0-4: Setup & Data Pipeline
-- Install turbo stack
-- Set up async data clients
-- Implement Kalman Filter for signal smoothing
-
-### Hours 4-12: Signal Discovery
-- Correlation analysis with Polars
-- Kalman Filter for noise reduction
-- OBI calculation from order book
-
-### Hours 12-24: Core Trading Engine
-- Numba-optimized feature engineering
-- Regime detection with HMM
-- Adaptive strategy with OBI signals
-
-### Hours 24-36: Streamlit Dashboard
-- Real-time PnL visualization
-- Signal correlation heatmaps
-- Regime transition timeline
-- Order book imbalance chart
-
-### Hours 36-42: Backtesting
-- Vectorized backtest with Polars
-- Performance metrics by regime
-- Statistical validation
-
-### Hours 42-48: Presentation Prep
-- Polish Streamlit dashboard
-- Generate static charts
-- Architecture diagrams
-- Practice demo
-
-## Key Libraries (Complete List)
-
-```txt
-# Core
-python>=3.10
-asyncio
-aiohttp>=3.9.0
-websockets>=12.0
-
-# Data Processing (Speed)
-polars>=0.19.0
-pandas>=2.0.0
-numpy>=1.24.0
-numba>=0.58.0
-
-# Math & Stats
-scipy>=1.11.0
-statsmodels>=0.14.0
-pykalman>=0.9.5
-filterpy>=1.4.5
-
-# Visualization (Wow Factor)
-streamlit>=1.28.0
-plotly>=5.17.0
-matplotlib>=3.8.0
-seaborn>=0.13.0
-
-# Testing
-hypothesis>=6.92.0
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-
-# Utilities
-pydantic>=2.5.0  # Data validation
-python-dotenv>=1.0.0  # Config management
-loguru>=0.7.0  # Better logging
+class Signal(BaseModel):
+    """Use Pydantic for all data models."""
+    direction: int = Field(..., ge=-1, le=1)  # -1, 0, 1
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    metadata: Optional[dict] = None
 ```
 
-## Common Commands
+### Testing
+- **Hypothesis**: Property-based testing for invariants
+- **pytest**: Unit tests
+- **pytest-asyncio**: Async test support
+
+```python
+from hypothesis import given, strategies as st
+
+@given(st.lists(st.floats(min_value=0, max_value=1000), min_size=10))
+def test_signal_properties(prices):
+    """Property: Signal confidence must be in [0, 1]."""
+    signal = generate_signal(prices)
+    assert 0 <= signal.confidence <= 1
+```
+
+## Performance Optimization Rules
+
+### Latency Targets (ENFORCE)
+- Total pipeline: < 100ms (data → signal → order)
+- Data ingestion: < 50ms (use async concurrent fetching)
+- Feature engineering: < 20ms (use Numba JIT)
+- Signal generation: < 10ms (vectorize with NumPy)
+- Order submission: < 20ms (async WebSocket)
+
+### Optimization Checklist
+1. **Use Polars over Pandas** for data processing
+2. **Apply `@jit(nopython=True)`** to loops and feature calculations
+3. **Vectorize with NumPy** - avoid Python loops on arrays
+4. **Async all I/O** - never use blocking requests/file operations
+5. **Cache expensive computations** - especially API calls
+
+```python
+# BAD: Blocking I/O
+import requests
+data = requests.get(url).json()  # Blocks event loop
+
+# GOOD: Async I/O
+async with aiohttp.ClientSession() as session:
+    async with session.get(url) as resp:
+        data = await resp.json()
+```
+
+## Advanced Techniques (Competitive Edge)
+
+### Order Book Imbalance (OBI)
+```python
+def order_book_imbalance(bids: list, asks: list, depth: int = 5) -> float:
+    """
+    Microstructure signal: predicts short-term price movement.
+    Returns value in [-1, 1] indicating buy/sell pressure.
+    """
+    bid_vol = sum(b['size'] for b in bids[:depth])
+    ask_vol = sum(a['size'] for a in asks[:depth])
+    return (bid_vol - ask_vol) / (bid_vol + ask_vol + 1e-10)
+```
+
+### Regime Detection
+- Use Hidden Markov Models (HMM) for probabilistic regime classification
+- Implement change point detection for regime transitions
+- Calculate Hurst exponent to measure mean-reversion vs trending
+
+## Error Handling Patterns
+
+```python
+from loguru import logger
+
+# Pattern: Graceful degradation
+try:
+    data = await fetch_external_data()
+except aiohttp.ClientError as e:
+    logger.warning(f"API failed, using cached data: {e}")
+    data = load_from_cache()
+except Exception as e:
+    logger.error(f"Unexpected error: {e}", exc_info=True)
+    raise  # Re-raise critical errors
+```
+
+## Configuration Management
+
+```python
+# Use config.yaml with environment variable substitution
+# Pattern: ${VAR_NAME:default_value}
+
+# config.yaml:
+# api_keys:
+#   openweather: ${OPENWEATHER_API_KEY}
+# exchange:
+#   url: ${EXCHANGE_URL:wss://default-url.com}
+
+# Load via src/utils/config.py
+from src.utils.config import load_config
+config = load_config()
+```
+
+## Common Anti-Patterns to Avoid
+
+1. **Blocking I/O in async functions** - Use aiohttp, not requests
+2. **Missing type hints** - All functions must have full type annotations
+3. **Hardcoded values** - Use config.yaml for all parameters
+4. **Bare except clauses** - Always catch specific exceptions
+5. **Python loops on NumPy arrays** - Vectorize or use Numba
+6. **Missing error handling in async code** - Wrap in try/except with logging
+
+## Key Commands
 
 ```bash
-# Setup
+# Install dependencies
 pip install -r requirements.txt
 
-# Run live bot
+# Run live trading bot
 python src/main.py --mode live
 
 # Run backtest
 python src/backtest.py --data data/historical.parquet
 
-# Launch dashboard (judges will love this)
-streamlit run src/dashboard.py
+# Launch Streamlit dashboard
+streamlit run src/visualization/dashboard.py
 
-# Run tests
-pytest tests/ -v
+# Run tests with coverage
+pytest tests/ -v --cov=src
 
 # Type checking
 mypy src/
+```
+
+## Import Organization
+
+```python
+# 1. Standard library (alphabetical)
+import asyncio
+from typing import Dict, List, Optional
+
+# 2. Third-party packages (alphabetical)
+import numpy as np
+import polars as pl
+from numba import jit
+from pydantic import BaseModel
+
+# 3. Local imports (alphabetical)
+from src.data.base import DataClient
+from src.signals.features import FeatureEngineer
+from src.utils.types import Signal, MarketData
 ```

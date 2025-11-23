@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-11-22T10:26:03.125713",
+  "performance": {
+    "total_pnl": 0.0,
+    "total_return": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "win_rate": 0.0,
+    "total_trades": 0,
+    "final_equity": 100000.0
+  },
+  "regime_breakdown": {},
+  "validation": {
+    "sharpe_ratio": false,
+    "max_drawdown": true,
+    "win_rate": false,
+    "positive_pnl": false,
+    "all_regimes_positive": true,
+    "passed": false
+  },
+  "regime_changes_count": 36
+}
